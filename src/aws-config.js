@@ -18,8 +18,8 @@
  * example application.
  */
 var awsConfiguration = {
-   poolId: 'us-east-1:0e479bcb-9299-41ab-85bf-4afded868582', // 'YourCognitoIdentityPoolId'
-   host: 'a76vbxkfyzxzr.iot.us-east-1.amazonaws.com', // 'YourAwsIoTEndpoint', e.g. 'prefix.iot.us-east-1.amazonaws.com'
+   poolId: 'us-east-1:a53189af-9503-4b72-ae87-cef0214ef280', // 'YourCognitoIdentityPoolId'
+   host: 'a3uyh7gqpjdvg8.iot.us-east-1.amazonaws.com', // 'YourAwsIoTEndpoint', e.g. 'prefix.iot.us-east-1.amazonaws.com'
    region: 'us-east-1' // 'YourAwsRegion', e.g. 'us-east-1'
 };
 module.exports = awsConfiguration;

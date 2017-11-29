@@ -73,10 +73,12 @@ const LiveScale = function(Component, config) {
 
     listenForMqttTopics() {
       this.mqttClient.on('connect', () => {
+        console.log('connectd');
         this.mqttClient.subscribe(topic)
       })
 
       this.mqttClient.on('message', (topic, payload) => {
+        console.log(topic, payload);
         const parsedPayload = JSON.parse(payload.toString())
         this.setState({...parsedPayload})
       })

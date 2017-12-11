@@ -1,27 +1,35 @@
 import React, { Component } from 'react';
-import logo from './logo.svg';
 import './App.css';
 import AWSIoTData from 'aws-iot-device-sdk'
-import AWSConfig from './aws-config'
 import AWS from 'aws-sdk'
 
-const topic = '/devices/#'
-const clientId = 'mqtt-explorer-' + (Math.floor((Math.random() * 100000) + 1));
+const awsConfiguration = {
+  poolId: 'us-east-1:a53189af-9503-4b72-ae87-cef0214ef280',
+  host: 'a3uyh7gqpjdvg8.iot.us-east-1.amazonaws.com', 
+  region: 'us-east-1'
+};
 
+const thingId = "esp32_111C08" // somehows store this with a username so it can be dynamic??
+const updateTopic = `$aws/things/${thingId}/shadow/update`
+const stateUpdatedTopic = `$aws/things/${thingId}/shadow/update/documents`
+const getTopic = `$aws/things/${thingId}/shadow/get`
+const getAcceptedTopic = `$aws/things/${thingId}/shadow/get/accepted`
+const clientId = 'kegbot' + (Math.floor((Math.random() * 100000) + 1));
 
 const LiveScale = function(Component, config) {
   return class extends Component {
 
     state = {
       weight: 0,
-      temperature: 0
+      temperature: 0,
+      pouring: false
     }
 
     constructor () {
       super();
-      AWS.config.region = AWSConfig.region;
+      AWS.config.region = config.region;
       AWS.config.credentials = new AWS.CognitoIdentityCredentials({
-        IdentityPoolId: AWSConfig.poolId
+        IdentityPoolId: config.poolId
       });
       this.mqttClient = this.createMqttClient()
     }
@@ -29,7 +37,7 @@ const LiveScale = function(Component, config) {
     createMqttClient() {
       return AWSIoTData.device({
         region: AWS.config.region,
-        host: AWSConfig.host,
+        host: config.host,
         clientId: clientId,
         protocol: 'wss',
         maximumReconnectTimeMs: 8000,
@@ -73,19 +81,33 @@ const LiveScale = function(Component, config) {
 
     listenForMqttTopics() {
       this.mqttClient.on('connect', () => {
-        console.log('connectd');
-        this.mqttClient.subscribe(topic)
+        this.mqttClient.subscribe(updateTopic)
+        this.mqttClient.subscribe(stateUpdatedTopic)
+        this.mqttClient.subscribe(getAcceptedTopic)
+        this.mqttClient.publish(getTopic)
       })
 
       this.mqttClient.on('message', (topic, payload) => {
-        console.log(topic, payload);
         const parsedPayload = JSON.parse(payload.toString())
-        this.setState({...parsedPayload})
+        if (topic === getAcceptedTopic) {
+          this.setState(parsedPayload.state.reported)
+        } else if (topic === stateUpdatedTopic) {
+          this.setState({...parsedPayload.current.state.reported, pouring: true})
+
+          if (this.timeoutId) {
+            clearTimeout(this.timeoutId);
+          }
+
+          this.timeoutId = setTimeout(() => {
+            this.setState({pouring: false})
+          }, 1000)
+
+        }
       })
     }
 
     tareScale = () => {
-      this.mqttClient.publish('/scale/tare', 'true', (err) => {
+      this.mqttClient.publish(updateTopic, JSON.stringify({state: {desired: {tare: true}}}), (err) => {
         console.log(err);
       })
     }
@@ -99,12 +121,19 @@ const LiveScale = function(Component, config) {
 }
 
 class App extends Component {
+
+  componentWillReceiveProps(nextProps) {
+    console.log(nextProps)
+  }
+
   render() {
-    const {weight, temperature, tareScale} = this.props
+    const {weight, temperature, tareScale, pouring} = this.props
     return (
       <div className="App">
         <div className="weight">
-          {weight >= 0.5 ? weight : 0}
+          {pouring && 'pouring'}
+          {weight >= 0.5 ? weight : 0}<span>lbs</span> <br />
+          {temperature}<sup>°</sup>
         </div>
         <button onClick={tareScale}>tare scale</button>
       </div>
@@ -112,4 +141,4 @@ class App extends Component {
   }
 }
 
-export default LiveScale(App, {});
+export default LiveScale(App, awsConfiguration);

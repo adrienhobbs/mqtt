@@ -1,15 +1,22 @@
 .App {
   width: 100%;
   height: 100vh;
-  background: black;
+  background: #2b2323;
   position: relative;
 }
 
 .weight {
+  text-align: center;
   font-size: 17em;
   color: white;
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+  font-family: 'Lato', sans-serif;
+}
+
+.weight > span {
+  font-size: 0.3em;
+  font-family: 'Lato', sans-serif;
 }
